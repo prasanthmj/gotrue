@@ -17,6 +17,18 @@ type gitlabProvider struct {
 	Host string
 }
 
+type gitlabUser struct {
+	Email       string `json:"email"`
+	Name        string `json:"name"`
+	AvatarURL   string `json:"avatar_url"`
+	ConfirmedAt string `json:"confirmed_at"`
+}
+
+type gitlabUserEmail struct {
+	ID    int    `json:"id"`
+	Email string `json:"email"`
+}
+
 func chooseHost(base, defaultHost string) string {
 	if base == "" {
 		return "https://" + defaultHost
@@ -57,7 +69,7 @@ func (g gitlabProvider) GetOAuthToken(code string) (*oauth2.Token, error) {
 }
 
 func (g gitlabProvider) GetUserData(ctx context.Context, tok *oauth2.Token) (*UserProvidedData, error) {
-	var u githubUser
+	var u gitlabUser
 
 	if err := makeRequest(ctx, tok, g.Config, g.Host+"/api/v4/user", &u); err != nil {
 		return nil, err
@@ -70,17 +82,19 @@ func (g gitlabProvider) GetUserData(ctx context.Context, tok *oauth2.Token) (*Us
 		},
 	}
 
-	var emails []*githubUserEmail
+	var emails []*gitlabUserEmail
 	if err := makeRequest(ctx, tok, g.Config, g.Host+"/api/v4/user/emails", &emails); err != nil {
 		return nil, err
 	}
 
 	for _, e := range emails {
-		data.Emails = append(data.Emails, Email{Email: e.Email, Verified: e.Verified, Primary: false})
+		// additional emails from GitLab don't return confirm status
+		data.Emails = append(data.Emails, Email{Email: e.Email, Verified: false, Primary: false})
 	}
 
 	if u.Email != "" {
-		data.Emails = append(data.Emails, Email{Email: u.Email, Verified: true, Primary: true})
+		verified := u.ConfirmedAt != ""
+		data.Emails = append(data.Emails, Email{Email: u.Email, Verified: verified, Primary: true})
 	}
 
 	if len(data.Emails) <= 0 {

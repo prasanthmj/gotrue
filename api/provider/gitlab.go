@@ -75,16 +75,16 @@ func (g gitlabProvider) GetUserData(ctx context.Context, tok *oauth2.Token) (*Us
 		return nil, err
 	}
 
-	if len(emails) > 0 {
-		data.Email = emails[0].Email
+	for _, e := range emails {
+		data.Emails = append(data.Emails, Email{Email: e.Email, Verified: e.Verified})
 	}
 
-	if data.Email == "" {
-		if u.Email != "" {
-			data.Email = u.Email
-		} else {
-			return nil, errors.New("Unable to find email with GitLab provider")
-		}
+	if u.Email != "" {
+		data.Emails = append(data.Emails, Email{Email: u.Email, Verified: true})
+	}
+
+	if len(data.Emails) <= 0 {
+		return nil, errors.New("Unable to find email with GitLab provider")
 	}
 
 	return data, nil

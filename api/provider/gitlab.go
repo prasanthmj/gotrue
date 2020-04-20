@@ -29,19 +29,6 @@ type gitlabUserEmail struct {
 	Email string `json:"email"`
 }
 
-func chooseHost(base, defaultHost string) string {
-	if base == "" {
-		return "https://" + defaultHost
-	}
-
-	baseLen := len(base)
-	if base[baseLen-1] == '/' {
-		return base[:baseLen-1]
-	}
-
-	return base
-}
-
 // NewGitlabProvider creates a Gitlab account provider.
 func NewGitlabProvider(ext conf.OAuthProviderConfiguration) (OAuthProvider, error) {
 	if err := ext.Validate(); err != nil {

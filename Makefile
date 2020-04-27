@@ -31,3 +31,12 @@ test: ## Run tests.
 
 vet: # Vet the code
 	go vet $(CHECK_FILES)
+
+updb:
+	docker run --name samplepg -e POSTGRES_PASSWORD=abcdefg -e POSTGRES_USER=svcuser -e POSTGRES_DB=appdb -d -p 5432:5432 postgres
+
+runapp:
+	go run main.go serve -c ./hack/test1.env
+
+migratex:
+	go run main.go migrate up -c ./hack/test1.env

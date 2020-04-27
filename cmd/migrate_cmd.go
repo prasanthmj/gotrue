@@ -10,13 +10,46 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var migrateCmd = cobra.Command{
-	Use:  "migrate",
-	Long: "Migrate database strucutures. This will create new tables and add missing columns and indexes.",
-	Run:  migrate,
+func createMigrateCommand() *cobra.Command {
+
+	var migrateCmd = cobra.Command{
+		Use:  "migrate",
+		Long: "Migrate database strucutures. This will create new tables and add missing columns and indexes.",
+		Args: cobra.MinimumNArgs(1),
+	}
+
+	var migrateUpCommand = &cobra.Command{
+		Use:   "up",
+		Long:  "migrate up the database.",
+		Short: "migrate up the database",
+		Run:   migrateUp,
+	}
+
+	migrateCmd.AddCommand(migrateUpCommand)
+
+	var migrateResetCommand = &cobra.Command{
+		Use:   "reset",
+		Long:  "reset the database.",
+		Short: "reset the database so that to start fresh",
+		Run:   migrateReset,
+	}
+
+	migrateCmd.AddCommand(migrateResetCommand)
+
+	return &migrateCmd
 }
 
-func migrate(cmd *cobra.Command, args []string) {
+func migrateUp(cmd *cobra.Command, args []string) {
+	logrus.Printf(" migrate up command ")
+	migrate("up")
+}
+
+func migrateReset(_ *cobra.Command, _ []string) {
+	migrate("reset")
+}
+
+func migrate(op string) {
+
 	globalConfig, err := conf.LoadGlobal(configFile)
 	if err != nil {
 		logrus.Fatalf("Failed to load configuration: %+v", err)
@@ -63,7 +96,13 @@ func migrate(cmd *cobra.Command, args []string) {
 	// turn off schema dump
 	mig.SchemaPath = ""
 
-	err = mig.Up()
+	switch op {
+	case "up":
+		err = mig.Up()
+	case "reset":
+		err = mig.Reset()
+	}
+
 	if err != nil {
 		logrus.Fatalf("%+v", errors.Wrap(err, "running db migrations"))
 	}
